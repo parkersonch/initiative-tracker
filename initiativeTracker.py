@@ -56,12 +56,15 @@ def main():
             inputString[j] = inputString[j].strip()
         # inputString[0] = command
         # inputString[1, 2, etc.] = arguments
+
+        # next turn
         if inputString[0] == 'n' or (i==0 and round==1):
             i += 1
             if i >= characters.__len__():
                 i = 0
                 round += 1
             
+        # add condition(s) to character
         elif inputString[0] == 'c':
             #inputString[1] = character name
             #inputString[2, 3, etc.] = condition(s)
@@ -69,6 +72,21 @@ def main():
                 if character[0].lower() == inputString[1]:
                     for j in range(2, inputString.__len__()):
                         character[2].append(inputString[j])
+        
+        # remove condition(s) from character
+        elif inputString[0] == 'rc':
+            #inputString[1] = character name
+            #inputString[2, 3, etc.] = condition(s)
+            for character in characters:
+                if character[0].lower() == inputString[1]:
+                    for condition in range(2, inputString.__len__()):
+                        j = 0
+                        while j < character[2].__len__():
+                            if character[2][j].lower() == inputString[condition]:
+                                character[2].pop(j)
+                            j+=1
+
+        # remove character from combat
         elif inputString[0] == 'r':
             #inputString[1] = character name
             toPop = -1
@@ -81,6 +99,8 @@ def main():
                     i = 0
             else:
                 print('that\'s not a character')
+        
+        # add character to combat
         elif inputString[0] == 'a':
             #inputString[1] = character name
             #inputString[2] = initiative
@@ -92,6 +112,7 @@ def main():
             newCharacter.append(conditions)
             characters.append(newCharacter)
             characters.sort(key=lambda character: character[1], reverse=True)
+
         writeInitiative(characters, i, round)
         c = getInput() 
         
