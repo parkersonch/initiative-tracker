@@ -1,7 +1,10 @@
 # TODO: refactor this to use objects instead of lists
+# TODO: add going back a turn
+# TODO: add hp tracking? maybe?;
 
 inputFileName = 'input.txt'
 outputFileName = 'initiative.txt'
+prompt = '$: '
 
 def main():
     inputFile = open(inputFileName, 'r')
@@ -21,27 +24,21 @@ def main():
         #values[0] = initiative count
         #values[1] = condition1, condition2, etc.
         initiative = int(values[0])
-        newCharacter = [name, initiative]
+        newCharacter = {
+            'name': name,
+            'initiative': initiative,
+            'conditions': []
+        }
         if values.__len__() > 1:
-            conditions = values[1].split(', ')
-            for i in range(conditions.__len__()):
-                conditions[i] = conditions[i].strip()
-            newCharacter.append(conditions)
+            for i in values[1].split(', '):
+                newCharacter['conditions'].append(i.strip())
         else:
-            newCharacter.append([])
+            newCharacter['conditions']=[]
         
         characters.append(newCharacter)
         line = inputFile.readline()
 
-    if (characters.__len__() < 1):
-        print('input file is empty')
-        return
-
-    characters.sort(key=lambda character: character[1], reverse=True)
-    
-    # for character in characters:
-    #     print('%s: %d' % (character[0], character[1]))
-    # print('')
+    sortCharacters(characters)
 
     # loop setup
     i = 0
@@ -59,31 +56,28 @@ def main():
 
         # next turn
         if inputString[0] == 'n' or (i==0 and round==1):
-            i += 1
-            if i >= characters.__len__():
-                i = 0
-                round += 1
+            i=getNextIndex()
             
         # add condition(s) to character
         elif inputString[0] == 'c':
             #inputString[1] = character name
             #inputString[2, 3, etc.] = condition(s)
             for character in characters:
-                if character[0].lower() == inputString[1]:
+                if character['name'].lower() == inputString[1]:
                     for j in range(2, inputString.__len__()):
-                        character[2].append(inputString[j])
+                        character['conditions'].append(inputString[j])
         
         # remove condition(s) from character
         elif inputString[0] == 'rc':
             #inputString[1] = character name
             #inputString[2, 3, etc.] = condition(s)
             for character in characters:
-                if character[0].lower() == inputString[1]:
+                if character['name'].lower() == inputString[1]:
                     for condition in range(2, inputString.__len__()):
                         j = 0
-                        while j < character[2].__len__():
-                            if character[2][j].lower() == inputString[condition]:
-                                character[2].pop(j)
+                        while j < character['conditions'].__len__():
+                            if character['conditions'][j].lower() == inputString[condition]:
+                                character['conditions'].pop(j)
                             j+=1
 
         # remove character from combat
@@ -91,11 +85,16 @@ def main():
             #inputString[1] = character name
             toPop = -1
             for j in range(characters.__len__()):
-                if characters[j][0].lower() == inputString[1]:
+                if characters[j]['name'].lower() == inputString[1]:
                     toPop = j
             if toPop != -1:
+                currentCharacter = characters[i]['name']
+                if i==toPop:
+                    currentCharacter = characters[getNextIndex()]['name']
                 characters.pop(toPop)
-                if i == characters.__len__():
+                i = getIndexOfCharacter(currentCharacter)
+                if i == -1:
+                    print('error: did not find character %s for some reason' % currentCharacter)
                     i = 0
             else:
                 print('that\'s not a character')
@@ -105,13 +104,22 @@ def main():
             #inputString[1] = character name
             #inputString[2] = initiative
             #inputString[3, 4, etc.] = conditions
-            newCharacter = [inputString[1], int(inputString[2])]
+            try:
+                newCharacter = {
+                    'name': inputString[1],
+                    'initiative': int(inputString[2]),
+                    'conditions': []
+                }
+            except:
+                print('error creating new character; maybe initiative was not a number?')
             conditions = []
             for j in range(3, inputString.__len__()):
                 conditions.append(inputString[j])
-            newCharacter.append(conditions)
+            newCharacter['conditions'] = conditions
             characters.append(newCharacter)
-            characters.sort(key=lambda character: character[1], reverse=True)
+            currentCharacter = characters[i]['name']
+            sortCharacters(characters)
+            i = getIndexOfCharacter(currentCharacter, characters)
 
         writeInitiative(characters, i, round)
         c = getInput() 
@@ -147,18 +155,29 @@ def writeInitiative(characters, i, round):
     f.write('\nRound: %d' % round)
     f.close()
 
+def sortCharacters(characters):
+    characters.sort(key=lambda character: character['initiative'], reverse=True)
 
 def getCharacterInitiativeString(character):
-    toReturn = '\t%s: %d' % (character[0], character[1])
-    for condition in character[2]:
+    toReturn = '\t%s: %d' % (character['name'], character['initiative'])
+    for condition in character['conditions']:
         toReturn += ', %s' % condition
     toReturn += '\n'
     return toReturn
 
 def getInput():
-    toReturn = input('$: ')
+    toReturn = input(prompt)
     toReturn = tidyUpInput(toReturn)
     return toReturn
+
+def getNextIndex(i, characters):
+    return (i+1) % characters.__len__()
+
+def getIndexOfCharacter(name, characters):
+    for i in range(characters.__len__()):
+        if characters[i]['name'] == name:
+            return i
+    return -1
 
 def tidyUpInput(c):
     return c.lower()
