@@ -1,0 +1,29 @@
+Accurate Attack:
+    -2
+    -6
+    -10
+    -14
+    -19
+
+Power Attack:
+    1d8
+    2d8
+    3d8
+    4d8
+    5d8
+
+Rank 1:
+    Accurate Attack: -1 damage per rank
+    Power Attack: 1d8 per rank
+
+Rank 2-3:
+    Accurate Attack: -4 damage per rank
+    Power Attack: 1d8 damage per rank
+
+Rank 4-6:
+    Accurate Attack: -4 damage per rank
+    Power Attack: 1d10 damage per rank
+
+Rank 7:
+    Accurate Attack: -4 damage per rank
+    Power Attack: 1d12 damage per rank

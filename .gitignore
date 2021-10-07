@@ -4,3 +4,5 @@ input.txt
 test/expected.txt
 *.pyc
 node_modules
+src/out
+characters

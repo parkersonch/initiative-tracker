@@ -1,0 +1,7 @@
+halfling: 7;
+human: 6; 10
+elf: 5; 10/15
+dwarf: 4; 10/5
+orc: 3; -; one, two, three
+satyr: 2; 5; super cool, groovy, sexually active
+asymar: 1; 12/16; loopy
