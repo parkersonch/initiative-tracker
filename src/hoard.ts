@@ -54,11 +54,9 @@ export class Hoard implements InitiativeItem {
                 initiative,
                 conditions.slice(),
                 hp,
-                maxHp
-            ))
-            if (tempHp != null) {
-                this.characters[i].addCounter('temp hp', tempHp, null);
-            }
+                maxHp,
+                tempHp
+            ));
         }
     }
 
@@ -147,7 +145,7 @@ export class Hoard implements InitiativeItem {
     damage(damageAmount: number, num: number, start: number) {
         this.performFunctionOnPortionOfWholeHoard((char: Character) => {
             char.hp-=damageAmount;
-            this.characters = this.characters.filter((char) => !char.conditions.includes(char.nohpCondition))
+            this.characters = this.characters.filter((char) => !char.conditions.includes('incapacitated'));
         }, num, start);
     }
 

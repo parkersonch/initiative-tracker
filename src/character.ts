@@ -1,6 +1,5 @@
 import { HasHp } from './hasHp';
 import { InitiativeItem } from './initiativeItem';
-import { Counter } from './counter';
 export class Character implements InitiativeItem, HasHp {
     private _name: string;
     public get name(): string {
@@ -9,7 +8,7 @@ export class Character implements InitiativeItem, HasHp {
     public set name(value: string) {
         this._name = value;
     }
-    
+
     private _initiative: number;
     public get initiative(): number {
         return this._initiative;
@@ -26,73 +25,74 @@ export class Character implements InitiativeItem, HasHp {
         this._conditions = value;
     }
 
+    private _hp: number;
     public get hp(): number {
-        console.log('here\'s what i\'m about to get:')
-        console.log(this.getCounter('hp'));
-        let hpCounter: Counter = this.getCounter('hp');
-        console.log('oh boy, here it comes!');
-        console.log(hpCounter);
-        if (hpCounter != null) {
-            return hpCounter.value;
-        } else {
-            return null;
-        }
+        return this._hp;
     }
     public set hp(value: number) {
-        this.setCounter('hp', value);
-        console.log(`${this.name}'s hp should now be ${value}. it is actually ${this.hp}`);
-        if (this.hp <= 0) {
-            this.addConditions([this.nohpCondition]);
+        if (this.maxHp === null || value === null) {
+            this._hp = value;
+            return;
+        }
+
+        if (value > this.maxHp) {
+            this._hp = this.maxHp;
+        } else {
+            this._hp = value;
         }
     }
+
+    private _maxHp: number;
     public get maxHp(): number {
-        return this.getCounter('hp').max;
+        return this._maxHp;
     }
     public set maxHp(value: number) {
-        this.setCounterMax('hp', value);
+        if (this.maxHp === null) {
+            this._maxHp = value;
+            this.hp = this.hp;
+        } else {
+            const hpMaxDiff = value - this.maxHp;
+            this._maxHp = value;
+            // when hpMax changes, hp goes up or down with it
+            this.heal(hpMaxDiff);
+        }
     }
+
+    private _tempHp: number;
     public get tempHp(): number {
-        return this.getCounter('temp hp').value;
+        return this._tempHp;
     }
-    public set tempHp(value: number) {
-        this.setCounter('temp hp', value);
-    }
-
-    private counters: Counter[] = [];
-
-    private _nohpCondition = "incapacitated";
-    public get nohpCondition() {
-        return this._nohpCondition;
-    }
-    public set nohpCondition(value) {
-        this._nohpCondition = value;
+    private set tempHp(value: number) {
+        this._tempHp = value;
+        if (this.tempHp != null && this.tempHp <= 0) {
+            this._tempHp = null
+        }
     }
 
     constructor(
         name: string,
-        initiative: number = null,
+        initiative: number,
         conditions: string[] = [],
         hp: number = null,
-        maxHp: number = null
+        maxHp: number = null,
+        tempHp: number = null
     ) {
         this.name = name;
         this.initiative = initiative;
         this.conditions = conditions;
-
-        this.addCounter(
-            'hp',
-            hp,
-            maxHp
-        )
-        console.log(`${this.name} has ${this.hp} hp, but they should have ${hp} hp`);
+        this.maxHp = maxHp;
+        this.hp = hp;
+        this.tempHp = tempHp;
     }
-    
-    getInitiativeString(): string {
-        let toReturn = `\t${this.name}`
-        if (this.initiative != null && !isNaN(this.initiative)) {
-            toReturn += `: ${this.initiative}`;
-        }
 
+    heal(healAmount: number) {
+        if (this.hp !== null) {
+            this.hp+=healAmount;
+        }
+    }
+
+    getInitiativeString() {
+        let toReturn = `\t${this.name}: ${this.initiative}`;
         if (this.hp != null && !isNaN(this.hp)) {
             toReturn+='\n\t\t';
             if (this.tempHp != null && !isNaN(this.tempHp)) {
@@ -105,17 +105,6 @@ export class Character implements InitiativeItem, HasHp {
             toReturn += ' hp';
         }
 
-        this.counters.forEach((counter) => {
-            if (counter.name !== 'hp' && counter.name !== 'temp hp') {
-                toReturn += '\n\t\t';
-                toReturn += `${counter.value}`;
-                if (counter.max != null && !isNaN(counter.max)) {
-                    toReturn += `/${counter.max}`;
-                }
-                toReturn += ` ${counter.name}`
-            }
-        });
-
         if (this.conditions.length !== 0) {
             toReturn += `\n\t\tConditions: ${this.conditions[0]}`;
             for (let i = 1; i < this.conditions.length; i++) {
@@ -126,6 +115,22 @@ export class Character implements InitiativeItem, HasHp {
         toReturn += '\n';
 
         return toReturn;
+    }
+
+    damage(damageAmount: number) {
+        if (this.tempHp !== null) {
+            const leftOverDamage = damageAmount - this.tempHp;
+            this.tempHp-=damageAmount;
+            if (leftOverDamage > 0) {
+                this.hp -= leftOverDamage;
+            }
+        } else {
+            this.hp -= damageAmount;
+        }
+
+        if (this.hp <= 0) {
+            this.addConditions(['incapacitated']);
+        }
     }
 
     addConditions(newConditions: string[]) {
@@ -140,101 +145,5 @@ export class Character implements InitiativeItem, HasHp {
                 (value: string) => value !== toRemove
                 );
         })
-    }
-
-    addCounter(name: string, value: number, max: number) {
-        console.log(`addCounter(): value is ${value}`);
-        if (this.getCounter(name) == null) {
-            this.counters.push(new Counter(
-                name,
-                value,
-                max
-            ));
-            console.log(this.counters);
-        } else {
-            console.log('there\'s already a counter with that name');
-        }
-
-        
-        
-    }
-
-    getCounter(name: string): Counter {
-        console.log(this.counters);
-        this.counters.forEach((counter) => {
-            console.log(`does ${counter.name} == ${name}?`)
-            if (counter.name === name) {
-                console.log('yes, so here\'s the counter');
-                console.log(counter);
-                return counter;
-            } else {
-                console.log('no');
-            }
-        });
-        return null;
-    }
-
-    setCounter(name: string, num: number) {
-        this.performOperationOnCounter(
-            name,
-            (counter: Counter) => {
-                counter.value = num;
-            }
-        )
-    }
-
-    increaseCounter(name: string, num: number) {
-        this.performOperationOnCounter(
-            name,
-            (counter: Counter) => {
-                counter.add(num);
-            }
-        )
-    }
-
-    decreaseCounter(name: string, num: number) {
-        this.performOperationOnCounter(
-            name,
-            (counter: Counter) => {
-                counter.subtract(num);
-            }
-        )
-    }
-
-    setCounterMax(name: string, num: number) {
-        this.performOperationOnCounter(
-            name,
-            (counter: Counter) => {
-                counter.max = num;
-            }
-        )
-    }
-
-    increaseCounterMax(name: string, num: number) {
-        this.performOperationOnCounter(
-            name,
-            (counter: Counter) => {
-                counter.max += num;
-            }
-        )
-    }
-
-    decreaseCounterMax(name: string, num: number) {
-        this.increaseCounter(name, -num);
-    }
-
-    performOperationOnCounter(name: string, operation: (counter: Counter) => any) {
-        let counter: Counter = this.getCounter(name);
-        if (counter != null) {
-            operation(counter);
-        } else {
-            console.log('no counter with that name');
-        }
-    }
-
-    getNullCounter(): Counter {
-        return new Counter(
-            null
-        );
     }
 }

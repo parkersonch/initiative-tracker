@@ -300,7 +300,8 @@ async function inputLoop(rl: readline.Interface, currentCharacter: number, chara
                         initiative,
                         conditions,
                         hp,
-                        maxHp
+                        maxHp,
+                        null
                     );
                     characters.push(newCharacter);
                     sortItems(characters);
@@ -322,7 +323,7 @@ async function inputLoop(rl: readline.Interface, currentCharacter: number, chara
                             inputString,
                             character,
                             async (char: Character, healAmount: number) => {
-                                char.hp += healAmount;
+                                char.heal(healAmount);
                             },
                             `enter amount to heal ${character.name}: `,
                             'heal amount was not a number',
@@ -364,7 +365,7 @@ async function inputLoop(rl: readline.Interface, currentCharacter: number, chara
                             inputString,
                             character,
                             async (char: Character, damageAmount: number) => {
-                                char.hp -= damageAmount;
+                                char.damage(damageAmount);
                             },
                             `enter amount to damage ${character.name}: `,
                             'damage amount was not a number',
