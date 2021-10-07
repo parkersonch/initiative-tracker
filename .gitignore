@@ -1,2 +1,6 @@
 initiative.txt
 input.txt
+.vscode
+test/expected.txt
+*.pyc
+node_modules
