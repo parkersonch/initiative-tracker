@@ -2,5 +2,12 @@
   "dependencies": {
     "@types/node": "^16.4.10",
     "prompt-sync": "^4.2.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^27.0.2",
+    "jest": "^27.2.5"
+  },
+  "scripts": {
+    "test": "jest"
   }
 }
