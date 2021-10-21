@@ -1,3 +1,4 @@
+import { Counter } from './counter';
 import { HasHp } from './hasHp';
 import { InitiativeItem } from './initiativeItem';
 export class Character implements InitiativeItem, HasHp {
@@ -25,37 +26,29 @@ export class Character implements InitiativeItem, HasHp {
         this._conditions = value;
     }
 
-    private _hp: number;
     public get hp(): number {
-        return this._hp;
+        return this.getCounter('hp');
     }
     public set hp(value: number) {
-        if (this.maxHp === null || value === null) {
-            this._hp = value;
-            return;
-        }
-
-        if (value > this.maxHp) {
-            this._hp = this.maxHp;
-        } else {
-            this._hp = value;
-        }
+        this.setCounter('hp', value);
     }
 
-    private _maxHp: number;
     public get maxHp(): number {
-        return this._maxHp;
+        return this.getCounterMax('hp');
     }
     public set maxHp(value: number) {
-        if (this.maxHp === null) {
-            this._maxHp = value;
-            this.hp = this.hp;
-        } else {
-            const hpMaxDiff = value - this.maxHp;
-            this._maxHp = value;
-            // when hpMax changes, hp goes up or down with it
-            this.heal(hpMaxDiff);
-        }
+        // if (this.maxHp === null) {
+        //     this._maxHp = value;
+        //     this.hp = this.hp;
+        // } else {
+        //     const hpMaxDiff = value - this.maxHp;
+        //     this._maxHp = value;
+        //     // when hpMax changes, hp goes up or down with it
+        //     this.heal(hpMaxDiff);
+        // }
+        let hpMaxDiff = value - this.maxHp;
+        this.setCounterMax('hp', value);
+        this.increaseCounter('hp', hpMaxDiff);
     }
 
     private _tempHp: number;
@@ -69,9 +62,17 @@ export class Character implements InitiativeItem, HasHp {
         }
     }
 
+    private _counters: Counter[];
+    public get counters(): Counter[] {
+        return this._counters;
+    }
+    public set counters(value: Counter[]) {
+        this._counters = value;
+    }
+
     constructor(
         name: string,
-        initiative: number,
+        initiative: number = null,
         conditions: string[] = [],
         hp: number = null,
         maxHp: number = null,
@@ -80,9 +81,11 @@ export class Character implements InitiativeItem, HasHp {
         this.name = name;
         this.initiative = initiative;
         this.conditions = conditions;
-        this.maxHp = maxHp;
-        this.hp = hp;
         this.tempHp = tempHp;
+
+        this.counters = [];
+
+        this.addCounter('hp', hp, maxHp);
     }
 
     heal(healAmount: number) {
@@ -103,6 +106,17 @@ export class Character implements InitiativeItem, HasHp {
                 toReturn += `/${this.maxHp}`;
             }
             toReturn += ' hp';
+        }
+
+        if (this.counters.length !== 0) {
+            this.counters.forEach((counter) => {
+                if (counter.name != 'hp') {
+                    toReturn += `\n\t\t\t${counter.name}: ${counter.value}`;
+                    if (counter.max != null) {
+                        toReturn += `/${counter.max}`;
+                    }
+                }
+            })
         }
 
         if (this.conditions.length !== 0) {
@@ -135,7 +149,7 @@ export class Character implements InitiativeItem, HasHp {
 
     addConditions(newConditions: string[]) {
         newConditions.forEach((condition)=>{
-            this.conditions.push(condition);
+            this.conditions.push(condition.trim());
         })
     }
 
@@ -143,7 +157,79 @@ export class Character implements InitiativeItem, HasHp {
         conditions.forEach((toRemove)=>{
             this.conditions = this.conditions.filter(
                 (value: string) => value !== toRemove
-                );
+            );
         })
     }
+
+    removeCounter(counterName: string) {
+        this.counters = this.counters.filter(
+            (counter: Counter) => counter.name !== counterName
+        );
+    }
+
+    addCounter(name: string, value: number, max: number) {
+        if (this.getCounter(name) == null) {
+            this.counters.push(new Counter(
+                name,
+                value,
+                max
+            ));
+        }
+    }
+
+    private _getCounter(name: string): Counter {
+        let toReturn: Counter = null;
+        this.counters.forEach((counter) => {
+            if (counter.name == name) {
+                toReturn = counter;
+            }
+        })
+        return toReturn;
+    }
+
+    getCounter(name: string): number {
+        let myCounter = this._getCounter(name);
+        if (myCounter == null) {
+            return null;
+        } else {
+            return myCounter.value;
+        }
+    }
+
+    getCounterMax(name: string): number {
+        let myCounter = this._getCounter(name);
+        if (myCounter == null) {
+            return null;
+        } else {
+            return myCounter.max;
+        }
+    }
+
+    setCounter(name: string, value: number) {
+        let myCounter = this._getCounter(name);
+        if (myCounter != null) {
+            myCounter.value = value;
+        }
+    }
+
+    setCounterMax(name: string, max: number) {
+        let myCounter = this._getCounter(name);
+        if (myCounter != null) {
+            myCounter.max = max;
+        }
+    }
+
+    increaseCounter(name: string, delta: number) {
+        let myCounter = this._getCounter(name);
+        if (myCounter != null) {
+            myCounter.value += delta;
+        }
+    }
+
+    increaseCounterMax(name: string, delta: number) {
+        let myCounter = this._getCounter(name);
+        if (myCounter != null) {
+            myCounter.max += delta;
+        }
+    };
 }

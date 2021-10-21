@@ -1,12 +1,13 @@
+import { Counter } from './counter';
 import { InitiativeItem } from './initiativeItem';
 import * as fs from 'fs';
 import * as readline from 'readline';
-import { getNum, printOptions, prompt, promptNumber, getIndexOfCharacter, getHoardStart, pickACharacter } from './utility';
+import { getNum, printOptions, prompt, promptNumber, getIndexOfCharacter, getHoardStart, pickACharacter, trimStringArray, parseValueMax } from './utility';
 import { Hoard } from './hoard';
 import { Character } from './character';
 
-let inputFileName = '../../input.txt';
-let outputFileName = '../../initiative.txt';
+let inputFileName = 'D:\\Users\\egost\\Documents\\ttrpg\\initiative-tracker\\input.txt';
+let outputFileName = 'D:\\Users\\egost\\Documents\\ttrpg\\initiative-tracker\\initiative.txt';
 let p = '$: ';
 
 function main() {
@@ -24,7 +25,7 @@ function main() {
 
         const stringArray = line.split(': ');
         // stringArray[0] = name
-        // stringArray[1] = initiative count; hp/hp max; condition1, condition2, etc.; is hoard
+        // stringArray[1] = initiative count; hp/hp max; condition1, condition2, etc.; is hoard; counter 1 name, value/max [] counter 2 name, value/max
         
         // handle wrong number of colons
         if (stringArray.length !== 2) {
@@ -38,6 +39,7 @@ function main() {
         // values[1] = hp/hp max (or -)
         // values[2] = condition1, condition2, etc
         // values[3] = hoard, numCharacters
+        // values[4] = counter 1 name, value/max [] counter 2 name, value/max
         for (let i=0; i<values.length; i++) {
             values[i] = values[i].trim();
         }
@@ -48,6 +50,11 @@ function main() {
         let maxHp = null;
         let hoard = false;
         let numCharacters = 1;
+        let counters: {
+            name: string,
+            value: number,
+            max: number
+        }[] = null;
 
         // hp
         if (values.length > 1) {
@@ -80,6 +87,32 @@ function main() {
             }
         }
 
+        // counters
+        if (values.length >= 5) {
+            const counterStrings = values[4].split('[]');
+            trimStringArray(counterStrings);
+
+            counters = [];
+            
+            counterStrings.forEach((counterString) => {
+                const counterValues = counterString.split(',');
+                trimStringArray(counterValues);
+
+                //counterValues[0] = counter name
+                // counterValues[1] = value/max
+                let counterName = counterValues[0];
+                let nums = parseValueMax(counterValues[1]);
+
+                counters.push({
+                    name: counterName,
+                    value: nums.value,
+                    max: nums.max
+                });
+                
+            })
+            // console.log(counterStrings);
+        }
+
         let newItem: InitiativeItem = null;
         if (hoard) {
             newItem = new Hoard(
@@ -99,6 +132,14 @@ function main() {
                 hp,
                 maxHp
             )
+        }
+
+        if (counters != null) {
+            counters.forEach((counter) => {
+                if (newItem instanceof Character) {
+                    newItem.addCounter(counter.name, counter.value, counter.max);
+                }
+            })
         }
 
         if (newItem !== null) {
@@ -482,6 +523,137 @@ async function inputLoop(rl: readline.Interface, currentCharacter: number, chara
                 }
 
                 break;
+            }
+
+            case 'ai':
+            case 'add counter':
+            case 'add i':
+            case 'addi': {
+                // inputString[1] = character name
+                // inputString[2] = counter name
+                // inputString[3] = value
+                // inputString[4] = max
+                let character: InitiativeItem = await pickACharacter('which character do you want to add a counter to?', inputString, characters, rl);
+                if (character != null && character instanceof Character || character instanceof Hoard) {
+                    let name: string = null;
+                    let value: number = null;
+                    let max: number = null;
+                    
+                    if (inputString.length > 2) {
+                        name = inputString[2];
+                    } else {
+                        name = await prompt('what counter do you want to add? ', rl);
+                    }
+
+                    if (inputString.length > 3) {
+                        value = parseInt(inputString[3]);
+                    } else {
+                        value = await promptNumber('what will the counter\'s value be? ', rl);
+                    }
+
+                    if (inputString.length > 4) {
+                        max = parseInt(inputString[4]);
+                    } else {
+                        max = await promptNumber('what will the counter\'s max be? ', rl);
+                    }
+
+                    if (character instanceof Character) {
+                        character.addCounter(name, value, max);
+                    } else {
+                        let num = await getNum(character, rl);
+                        let start = await getHoardStart(num, character, rl);
+
+                        if (num != null && start != null) {
+                            character.addCounter(name, value, max, num, start);
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            case 'ii': {
+                // inputString[1] = character name
+                let character = await pickACharacter('Which character do you want to increase a counter for?', inputString, characters, rl);
+                if (character != null && character instanceof Character) {
+                    let counter: Counter = await printOptions(
+                        'what counter do you want to increase?',
+                        character.counters,
+                        (counter) => {
+                            return counter.name;
+                        },
+                        rl
+                    );
+                    if (counter != null) {
+                        let valueToIncreaseBy = await promptNumber('what do you want the counter to increase by? ', rl);
+                        if (valueToIncreaseBy != null) {
+                            character.increaseCounter(counter.name, valueToIncreaseBy);
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            case 'iim': {
+                let character = await pickACharacter('Which character do you want to increase a counter\'s max for?', inputString, characters, rl);
+                if (character != null && character instanceof Character) {
+                    let counter: Counter = await printOptions(
+                        'what counter do you want to increase the max for?',
+                        character.counters,
+                        (counter) => {
+                            return counter.name;
+                        },
+                        rl
+                    );
+                    if (counter != null) {
+                        let valueToIncreaseBy = await promptNumber('what do you want the counter\'s max to increase by? ', rl);
+                        if (valueToIncreaseBy != null) {
+                            character.increaseCounterMax(counter.name, valueToIncreaseBy);
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            case 'si': {
+                let character = await pickACharacter('Which character do you want to set a counter for?', inputString, characters, rl);
+                if (character != null && character instanceof Character) {
+                    let counter: Counter = await printOptions(
+                        'what counter do you want to set?',
+                        character.counters,
+                        (counter) => {
+                            return counter.name;
+                        },
+                        rl
+                    );
+                    if (counter != null) {
+                        let newValue = await promptNumber('what new value do you want for this counter?', rl);
+                        if (newValue != null) {
+                            character.setCounter(counter.name, newValue);
+                        }
+                    }
+                }
+
+                break;
+            }
+
+            case 'ri': {
+                let character = await pickACharacter('Which character do you want to remove a counter for?', inputString, characters, rl);
+                if (character != null && character instanceof Character) {
+                    let counter: Counter = await printOptions(
+                        'which counter do you want to remove?',
+                        character.counters,
+                        (counter) => {
+                            return counter.name;
+                        },
+                        rl
+                    );
+                    if (counter != null) {
+                        character.removeCounter(counter.name);
+                    }
+                }
             }
 
         }

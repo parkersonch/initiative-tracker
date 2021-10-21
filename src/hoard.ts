@@ -1,3 +1,4 @@
+import { start } from "repl";
 import { Character } from "./character";
 import { InitiativeItem } from "./initiativeItem";
 
@@ -79,12 +80,18 @@ export class Hoard implements InitiativeItem {
 
                 toReturn += ' hp';
             }
-            if (character.conditions.length > 0) {
-                if (character.hp !== null) {
-                    toReturn += '; ';
-                }
 
-                toReturn += `Conditions: ${character.conditions[0]}`;
+            character.counters.forEach((counter) => {
+                if (counter.name != 'hp') {
+                    toReturn += `\n\t\t\t\t${counter.name}: ${counter.value}`;
+                    if (counter.max != null) {
+                        toReturn += `/${counter.max}`;
+                    }
+                }
+            });
+
+            if (character.conditions.length > 0) {
+                toReturn += `\n\t\t\t\tConditions: ${character.conditions[0]}`;
                 character.conditions.slice(1).forEach((condition)=> {
                     toReturn += `, ${condition}`
                 });
@@ -158,6 +165,12 @@ export class Hoard implements InitiativeItem {
     setMaxHp(newMaxHp: number, num: number, start: number) {
         this.performFunctionOnPortionOfWholeHoard((char: Character) => {
             char.maxHp = newMaxHp;
+        }, num, start)
+    }
+
+    addCounter(name: string, value: number, max: number, num: number, start: number) {
+        this.performFunctionOnPortionOfWholeHoard((char: Character) => {
+            char.addCounter(name, value, max);
         }, num, start)
     }
 

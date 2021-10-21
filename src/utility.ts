@@ -129,6 +129,45 @@ export function getIndexOfCharacter(name: string, characters: InitiativeItem[]):
     return null;
 }
 
+export function trimStringArray(array: string[]) {
+    for (let i=0; i<array.length; i++) {
+        array[i] = array[i].trim();
+    }
+}
+
+export function parseValueMax(valueMaxString: string): {
+    value: number,
+    max: number
+} {
+    let toReturn = {
+        value: null,
+        max: null
+    };
+
+    if (valueMaxString === '-' || valueMaxString === '') {
+        return toReturn;
+    }
+
+    const nums = valueMaxString.split('/');
+    trimStringArray(nums);
+    // nums[0] = value
+    // nums[1] = max
+    if (nums.length > 2) {
+        console.log('incorrect input for counter');
+        return toReturn;
+    }
+    try {
+        toReturn.value = parseInt(nums[0]);
+        if (nums.length === 2) {
+            toReturn.max = parseInt(nums[1]);
+        }
+    } catch {
+        console.log('incorrect input for counter');
+    }
+
+    return toReturn;
+}
+
 function myPrintFunction<E>(aList: E[], aFunc: (e:E) => string): string {
     let toReturn = '';
     for (let i=0; i<aList.length; i++) {
