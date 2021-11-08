@@ -144,7 +144,7 @@ export function parseValueMax(valueMaxString: string): {
         max: null
     };
 
-    if (valueMaxString === '-' || valueMaxString === '') {
+    if (valueMaxString == null || valueMaxString === '-' || valueMaxString === '') {
         return toReturn;
     }
 
